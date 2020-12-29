@@ -1,20 +1,24 @@
-const Builder = @import("std").build.Builder;
+const std = @import("std");
+const Builder = std.build.Builder;
 
-pub fn build(b: *Builder) void {
-    // Standard target options allows the person running `zig build` to choose
-    // what target to build for. Here we do not override the defaults, which
-    // means any target is allowed, and the default is native. Other options
-    // for restricting supported target set are available.
-    const target = b.standardTargetOptions(.{});
 
-    // Standard release options allow the person running `zig build` to select
-    // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
+pub fn build(b: *Builder) !void {
+
+    const target = b.standardTargetOptions(.{
+    .default_target = try std.zig.CrossTarget.parse(.{
+        .arch_os_abi = if (std.builtin.os.tag == .windows)
+            "native-native-gnu"
+        else
+            "native-linux-musl",
+    }),
+    });
+
     const mode = b.standardReleaseOptions();
 
     const exe = b.addExecutable("sfml", "src/main.zig");
     exe.linkLibC();
     exe.addPackagePath("sfml", "sfml-wrapper/src/sfml/sfml.zig");
-    exe.addLibPath("csfml/lib/msvc/");
+    exe.addLibPath("csfml/lib/gcc/");
     exe.linkSystemLibrary("csfml-graphics");
     exe.linkSystemLibrary("csfml-system");
     exe.linkSystemLibrary("csfml-window");
