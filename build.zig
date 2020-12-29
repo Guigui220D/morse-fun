@@ -11,17 +11,19 @@ pub fn build(b: *Builder) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardReleaseOptions();
 
-    const exe = b.addExecutable("morse-code", "src/main.zig");
+    const exe = b.addExecutable("sfml", "src/main.zig");
+    exe.linkLibC();
+    exe.addPackagePath("sfml", "sfml-wrapper/src/sfml/sfml.zig");
+    exe.addLibPath("csfml/lib/msvc/");
+    exe.linkSystemLibrary("csfml-graphics");
+    exe.linkSystemLibrary("csfml-system");
+    exe.linkSystemLibrary("csfml-window");
+    exe.linkSystemLibrary("csfml-audio");
+    exe.addIncludeDir("csfml/include/");
     exe.setTarget(target);
     exe.setBuildMode(mode);
     exe.install();
 
-    const run_cmd = exe.run();
-    run_cmd.step.dependOn(b.getInstallStep());
-    if (b.args) |args| {
-        run_cmd.addArgs(args);
-    }
-
-    const run_step = b.step("run", "Run the app");
-    run_step.dependOn(&run_cmd.step);
+    const run_step = b.step("run", "Run the program");
+    run_step.dependOn(&exe.run().step);
 }
