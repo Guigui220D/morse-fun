@@ -13,12 +13,7 @@ pub fn BitQueue(comptime bit_group_size: usize) type {
                 .bits = bit_group_size
             }
         }); //An unsigned int for groups of bits to be stored in the queue
-        const ShiftU = @Type(.{ 
-            .Int = .{ 
-                .is_signed = false, 
-                .bits = @floatToInt(usize, @log2(@as(f32, bit_group_size)))
-            }
-        }); //Weird thing to get an unsigned type that can be used to bitshift variables of the BitGroup type
+        const ShiftU = std.math.Log2Int(BitGroup);
 
         ///Inits this queue with an allocator
         pub fn init(alloc: *std.mem.Allocator) Self {
@@ -118,7 +113,7 @@ pub fn BitQueue(comptime bit_group_size: usize) type {
 usingnamespace std.testing;
 
 test "bitqueue" {
-    inline for ([_]usize{ 2, 8, 16, 32 }) |bit_group_size| {
+    inline for ([_]usize{ 2, 3, 7, 8, 9, 15, 16, 17 }) |bit_group_size| {
         std.debug.print("Testing for {} bits bit groups...\n", .{bit_group_size});
 
         var bq = BitQueue(bit_group_size).init(std.heap.page_allocator);
