@@ -9,15 +9,17 @@ pub fn main() !void {
     defer shape.deinit();
     shape.setFillColor(sf.Color.Green);
 
-    for (morse_table) |t| {
-        std.debug.print("{}\n", .{t});
-    }
-
     while (window.isOpen()) {
         while (window.pollEvent()) |event| {
-            if (event == .closed)
-                window.close();
-            
+            switch (event) {
+                .closed => window.close(),
+                .textEntered => |char| {
+                    if (char.unicode >= 128)
+                        continue;
+                    std.debug.print("{}\n", .{morse_table[char.unicode]});
+                },
+                else => {}
+            }
         }
 
         window.clear(sf.Color.Black);
@@ -27,13 +29,13 @@ pub fn main() !void {
 }
 
 
-// This array of 256 strings stores a morse code for each ascii character
-const morse_table: [256][]const u8 = comptime {
+// This array of 128 strings stores a morse code for each ascii character
+const morse_table: [128][]const u8 = comptime {
     // We create this table from a file at comptime
     @setEvalBranchQuota(10000); // For more complex comptime evaluations
 
     // Init the table with just empty strings everywhere
-    var table = [1][]const u8{ "" } ** 256;
+    var table = [1][]const u8{ "" } ** 128;
     const file = @embedFile("morse_codes.txt");
 
     var line_iterator = std.mem.tokenize(file, "\n");
