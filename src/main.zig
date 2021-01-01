@@ -1,7 +1,25 @@
 const sf = @import("sfml");
 const std = @import("std");
 
+const allocator = std.heap.page_allocator;
+
+usingnamespace @import("bitqueue.zig");
+
+const BeepState = enum {
+    dit,
+    dah,
+    pause,
+};
+
 pub fn main() !void {
+    var morse_queue = BitQueue(8).init(allocator);
+    defer morse_queue.deinit();
+
+    var pause = true;
+    var beep_state: BeepState = .pause;
+    var clock = try sf.Clock.init();
+    defer clock.deinit();
+
     var window = try sf.RenderWindow.init(.{ .x = 200, .y = 200 }, 32, "SFML works!");
     defer window.deinit();
 
@@ -16,14 +34,56 @@ pub fn main() !void {
                 .textEntered => |char| {
                     if (char.unicode >= 128)
                         continue;
-                    std.debug.print("{}\n", .{morse_table[char.unicode]});
+                    pause = false;
+                    const morse = morse_table[char.unicode];
+                    for (morse) |beep| {
+                        switch (beep) {
+                            '.' => { morse_queue.push(0) catch unreachable; },
+                            '_' => { morse_queue.push(1) catch unreachable; },
+                            else => unreachable
+                        }
+                    } 
                 },
                 else => {}
             }
         }
 
         window.clear(sf.Color.Black);
-        window.draw(shape, null);
+
+        if (!pause) {
+            switch (beep_state) {
+                .dit => {
+                    if (clock.getElapsedTime().asSeconds() > 0.2) {
+                        _ = clock.restart();
+                        beep_state = .pause;
+                    }
+                        
+                },
+                .dah => {
+                    if (clock.getElapsedTime().asSeconds() > 0.5) {
+                        _ = clock.restart();
+                        beep_state = .pause;
+                    }
+                        
+                },
+                .pause => {
+                    if (clock.getElapsedTime().asSeconds() > 0.15) {
+                        _ = clock.restart();
+
+                        var new_state = morse_queue.pop();
+
+                        if (new_state) |new| {
+                            beep_state = if (new == 1) .dah else .dit;
+                        } else
+                            pause = true;
+                    }
+                }
+            }
+        }
+
+        if (beep_state != .pause)
+            window.draw(shape, null);
+
         window.display();
     }
 }

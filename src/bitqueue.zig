@@ -5,15 +5,15 @@ const std = @import("std");
 // BitQueue template, the bit_group_size argument is for knowing how bits many bits should be grouped when pushed on the actual queue
 pub fn BitQueue(comptime bit_group_size: usize) type {
     return struct {
-        const Self = @This();   // Self is just a shorter name for BitQueue
+        const Self = @This();
         const GroupQueue = std.TailQueue(BitGroup);
         const BitGroup = @Type(.{ 
             .Int = .{ 
-                .is_signed = false, 
+                .signedness = .unsigned, 
                 .bits = bit_group_size
             }
         }); //An unsigned int for groups of bits to be stored in the queue
-        const ShiftU = std.math.Log2Int(BitGroup);
+        const BitIndex = std.math.Log2Int(BitGroup);
 
         ///Inits this queue with an allocator
         pub fn init(alloc: *std.mem.Allocator) Self {
@@ -104,16 +104,16 @@ pub fn BitQueue(comptime bit_group_size: usize) type {
         allocator: *std.mem.Allocator,
         group_queue: GroupQueue,
         group_in: BitGroup,
-        group_in_bit: ShiftU,
+        group_in_bit: BitIndex,
         group_out: BitGroup,
-        group_out_bit: ShiftU
+        group_out_bit: BitIndex
     };
 }
 
 usingnamespace std.testing;
 
 test "bitqueue" {
-    inline for ([_]usize{ 2, 3, 7, 8, 9, 15, 16, 17 }) |bit_group_size| {
+    inline for ([_]usize{ 2, 3, 7, 8, 9, 15, 16, 17, 64 }) |bit_group_size| {
         std.debug.print("Testing for {} bits bit groups...\n", .{bit_group_size});
 
         var bq = BitQueue(bit_group_size).init(std.heap.page_allocator);
